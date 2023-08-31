@@ -1,13 +1,11 @@
 import User from "../../models/userSchema";
-
-const express = require("express");
 const bcryptjs = require("bcryptjs");
 
 exports.signup = async (req: any, res: any) => {
     try {
-
+        // get data from body
         const { username, email, password, confirmPassword, accountType } = req.body;
-
+        // verify every required fields are present or not
         if (!username || !email || !password || !confirmPassword) {
             return res.status(422).json({
                 success: false,
