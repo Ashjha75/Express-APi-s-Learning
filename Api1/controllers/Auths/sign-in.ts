@@ -1,6 +1,4 @@
-import { access } from "fs";
 import User from "../../models/userSchema";
-
 const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs")
 require("dotenv").config()
@@ -41,7 +39,7 @@ exports.signin = async (req: any, res: any) => {
             let accessToken = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30m' });
             let refreshToken = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-            return res.cookie("refreshToken", refreshToken, "accessToken", accessToken, options).status(201).json({
+            return res.cookie("access-token", accessToken, options).status(201).json({
                 success: true,
                 message: "Successfully Logged in",
             });
