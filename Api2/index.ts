@@ -7,14 +7,23 @@ const app = express();
 import { dbConnect } from "./config/connectDb";
 // .env imports
 require("dotenv").config();
-const { PORT, DTABASE_URL } = process.env;
+const { PORT } = process.env;
 console.log(PORT)
 // middleware imports
 const cookiParser = require("cookie-parser");
+import bodyParser from "body-parser";
 
 // routes imports
+const authRouter = require("./routes/authRouter")
 
-console.log("first")
+// middlewares used 
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cookiParser());
+
+
+app.use("/api/v1/auth", authRouter)
 
 const start = async () => {
     try {

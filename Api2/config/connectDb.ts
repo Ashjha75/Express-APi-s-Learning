@@ -13,12 +13,7 @@ export const dbConnect = async () => {
         return;
     }
     try {
-        mongoose.connect(process.env.DATABASE_URL, {
-            useNewUrlParser: true,
-            useCreateIndex: true,
-            useFindAndModify: false,
-            useUnifiedTopology: true,
-        });
+        mongoose.connect(process.env.DATABASE_URL);
         isConnected = true
         console.log("SuccesFully Connected to Db");
 
