@@ -5,8 +5,8 @@ const bcryptjs = require("bcryptjs")
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { commonservices } from "../libs/service/commonservices";
 require("dotenv").config();
+import { BadRequestError } from "../libs/errors/badrequest.error";
 const commonServices = new commonservices()
-
 type decoded = {
     id: string,
     email: string,
@@ -60,7 +60,6 @@ export const register = async (req: Request, res: Response) => {
     }
 }
 
-
 // Login function
 export const login = async (req: Request, res: Response) => {
     try {
@@ -68,10 +67,11 @@ export const login = async (req: Request, res: Response) => {
         const { email, password } = req.body;
         // validate the req body data
         if (!email || !password) {
-            return res.status(402).json({
+            return res.status(401).json({
                 success: false,
                 message: "Please fill all required field."
             })
+            // throw new BadRequestError("Please provide email and password");
         }
         // check email
         const user = await User.findOne({ email });
@@ -87,12 +87,6 @@ export const login = async (req: Request, res: Response) => {
             username: user.username,
             role: user.roles
         }
-        await commonServices.setvalue({
-            id: user?._id,
-            email: user?.email,
-            username: user?.username,
-            roles: user?.roles
-        });
 
         // comare the password and generate token
         if (await bcryptjs.compare(password, user.password)) {
@@ -111,6 +105,12 @@ export const login = async (req: Request, res: Response) => {
                 data: user
             });
         }
+        else {
+            return res.status(402).json({
+                success: false,
+                message: "Invalid credentials."
+            })
+        }
     } catch (error: any) {
         return res.status(500).json({
             success: false,
@@ -118,7 +118,6 @@ export const login = async (req: Request, res: Response) => {
         })
     }
 }
-
 
 // logout function
 export const logout = async (req: Request, res: Response) => {
@@ -140,11 +139,9 @@ export const logout = async (req: Request, res: Response) => {
     }
 }
 
-
 // reset password function
 export const resetPassword = async (req: Request, res: Response) => {
     try {
-        console.log(commonServices.getvalue())
         const userLoggedIn = await isLoggedIn(req, res);
         if (!userLoggedIn) {
             // get data from request body
@@ -195,4 +192,3 @@ export const resetPassword = async (req: Request, res: Response) => {
         })
     }
 }
-// check user is logged in or not

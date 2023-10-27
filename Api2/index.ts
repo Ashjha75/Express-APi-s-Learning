@@ -1,6 +1,7 @@
 
 // express imports 
 const express = require("express");
+require('express-async-errors');
 const app = express();
 
 // database connect
@@ -8,7 +9,7 @@ import { dbConnect } from "./config/connectDb";
 // .env imports
 require("dotenv").config();
 const { PORT } = process.env;
-console.log(PORT)
+
 // middleware imports
 const cookiParser = require("cookie-parser");
 import bodyParser from "body-parser";
