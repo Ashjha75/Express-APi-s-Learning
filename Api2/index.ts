@@ -17,7 +17,7 @@ const cors = require("cors");
 
 // routes imports
 const authRouter = require("./routes/authRouter");
-// middlewares used
+// custom middlewares used to log the request 
 app.use(logger);
 const whitelist = [
   "http://localhost:8080",
@@ -38,11 +38,18 @@ const corsOptions = {
 };
 // app.use(cors(corsOptions));
 app.use(cors());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// data from body
+app.use(express.json({ limit: '16kb' }));
+// for storing datas in public folder
+app.use(express.static("public"))
+// data from url{extended help in  reading object inside object}
+app.use(express.urlencoded({ extended: true }));
+// not required now
 app.use(bodyParser.json());
+// for cookie reading
 app.use(cookiParser());
 
+// versioning of api auth series
 app.use("/api/v1/auth", authRouter);
 
 const start = async () => {

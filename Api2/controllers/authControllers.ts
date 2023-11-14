@@ -10,6 +10,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { commonservices } from "../libs/service/commonservices";
 require("dotenv").config();
 import { BadRequestError } from "../libs/errors/badrequest.error";
+import { asyncHandler } from "../libs/errors/AsyncHandler.errors";
 const commonServices = new commonservices();
 type decoded = {
   id: string;
@@ -65,58 +66,51 @@ export const register = async (req: Request, res: Response) => {
 
 // Login function
 export const login = async (req: Request, res: Response) => {
-  try {
-    // request body
-    const { email, password } = req.body;
-    // validate the req body data
-    if (!email || !password) {
-      return res.status(401).json({
-        success: false,
-        message: "Please fill all required field.",
-      });
-      // throw new BadRequestError("Please provide email and password");
-    }
-    // check email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(402).json({
-        success: false,
-        message: "User doesn't exists.",
-      });
-    }
-    const payload = {
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      role: user.roles,
-    };
-
-    // comare the password and generate token
-    if (await bcryptjs.compare(password, user.password)) {
-      let token = jwt.sign(payload, process.env.JWT_SECRET!, {
-        expiresIn: "2h",
-      });
-      user.token = token;
-      user.password = undefined;
-      // set the global user details
-
-      // set token in cookies
-      setcookies(token, res);
-      res.status(200).json({
-        success: true,
-        message: "User loggedin successfully",
-        data: user,
-      });
-    } else {
-      return res.status(402).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
-    }
-  } catch (error: any) {
-    return res.status(500).json({
+  // request body
+  const { email, password } = req.body;
+  // validate the req body data
+  if (!email || !password) {
+    return res.status(401).json({
       success: false,
-      message: error.message,
+      message: "Please fill all required field.",
+    });
+    // throw new BadRequestError("Please provide email and password");
+  }
+  // check email
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(402).json({
+      success: false,
+      message: "User doesn't exists.",
+    });
+  }
+  const payload = {
+    id: user._id,
+    email: user.email,
+    username: user.username,
+    role: user.roles,
+  };
+
+  // comare the password and generate token
+  if (await bcryptjs.compare(password, user.password)) {
+    let token = jwt.sign(payload, process.env.JWT_SECRET!, {
+      expiresIn: "2h",
+    });
+    user.token = token;
+    user.password = undefined;
+    // set the global user details
+
+    // set token in cookies
+    setcookies(token, res);
+    res.status(200).json({
+      success: true,
+      message: "User loggedin successfully",
+      data: user,
+    });
+  } else {
+    return res.status(402).json({
+      success: false,
+      message: "Invalid credentials.",
     });
   }
 };
