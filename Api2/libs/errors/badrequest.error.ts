@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
-import { CustomErrors } from "./custom-error";
+import { ApiError } from "./ApiError.error";
 
-export class BadRequestError extends CustomErrors {
+export class BadRequestError extends ApiError {
     statusCode: any;
     constructor(message: string) {
         super(message);
