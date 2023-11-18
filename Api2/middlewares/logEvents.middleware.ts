@@ -5,11 +5,17 @@ import { v4 as uuid } from "uuid";
 const fs = require("fs");
 const path = require("path");
 const fsPromises = require("fs").promises;
+import { EventEmitter } from "events";
 // import ExcelJS from "exceljs";
 
-const logEvents = async (message: string, logName: string, urlPath: string) => {
+export const logEvents = async (
+  message: string,
+  logName: string,
+  urlPath: string,
+  status: number
+) => {
   const dateTime = `${format(new Date(), "yyyy/MM/dd\tHH:mm:ss")}`;
-  const logItem = `${dateTime}\t${uuid()}\t${message}\t${urlPath}\n`;
+  const logItem = `${dateTime}\t${uuid()}\t${message}\t${urlPath}\t\t${status}\n`;
 
   try {
     if (!fs.existsSync(path.join(__dirname, "../libs", "logs"))) {
@@ -49,12 +55,20 @@ const logEvents = async (message: string, logName: string, urlPath: string) => {
 //     console.log(error.message);
 //   }
 // };
-
+interface ApiResonse extends Response, EventEmitter {
+  statusCode: number;
+}
+// logger middleware
 export const logger = async (
   req: Request,
-  res: Response,
+  res: ApiResonse,
   next: NextFunction
 ) => {
-  logEvents(`${req.method}\t${req.headers.origin}`, "reqLog.txt", req.url);
+  res.on("finish", () => {
+    const status = res.statusCode;
+    const message = `${req.method}\t${req.headers.origin}`;
+    const url = req.originalUrl;
+    logEvents(message, "reqLog.txt", url, status);
+  });
   next();
 };
