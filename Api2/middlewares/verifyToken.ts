@@ -1,9 +1,7 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 require("dotenv").config();
-interface AuthRequest extends Request {
-  user?: JwtPayload;
-}
+import { AuthRequest } from "../libs/service/interfaces/Request_Response.interface";
 
 export const verifyToken = (
   req: AuthRequest,
@@ -11,8 +9,7 @@ export const verifyToken = (
   next: NextFunction
 ) => {
   const token = req.headers.authorization;
-
-  if (!token || !token.startsWith("Bearer")) {
+  if (!token || token.split(" ")[0] !== "Bearer") {
     return res.status(400).json({
       success: false,
       message: "Please provide a valid token.",
