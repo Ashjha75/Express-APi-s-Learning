@@ -2,6 +2,7 @@
 const express = require("express");
 require("express-async-errors");
 const app = express();
+import { errorHandler } from "./middleware/error.middleware";
 
 // database connect
 import { dbConnect } from "./config/dbConnect";
@@ -16,7 +17,7 @@ import bodyParser from "body-parser";
 const cors = require("cors");
 
 // routes imports
-const authRouter = require("./routes/authRouter");
+import router from "./rotutes/auth/user.routes";
 // custom middlewares used to log the request 
 // app.use(logger);
 const whitelist = [
@@ -50,7 +51,7 @@ app.use(bodyParser.json());
 app.use(cookiParser());
 
 // versioning of api auth series
-app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/auth", router);
 
 const start = async () => {
     try {
@@ -63,3 +64,4 @@ const start = async () => {
     }
 };
 start();
+app.use(errorHandler);
