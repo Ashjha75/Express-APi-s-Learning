@@ -18,6 +18,7 @@ const cors = require("cors");
 
 // routes imports
 import router from "./rotutes/auth/user.routes";
+import { verifyToken } from "./middleware/verifyToken.middleware";
 // custom middlewares used to log the request 
 // app.use(logger);
 const whitelist = [
@@ -49,7 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 // for cookie reading
 app.use(cookiParser());
-
+app.use(verifyToken)
 // versioning of api auth series
 app.use("/api/v1/auth", router);
 
