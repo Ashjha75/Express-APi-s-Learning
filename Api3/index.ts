@@ -50,7 +50,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 // for cookie reading
 app.use(cookiParser());
-app.use(verifyToken)
 // versioning of api auth series
 app.use("/api/v1/auth", router);
 
