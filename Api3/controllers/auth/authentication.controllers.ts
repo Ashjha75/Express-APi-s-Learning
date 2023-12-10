@@ -1,0 +1,167 @@
+import User from '../../models/auth/user.models'
+import { NextFunction, Request, Response } from 'express';
+const bcryptjs = require("bcryptjs");
+import Jwt, { JwtPayload } from 'jsonwebtoken';
+import { ApiError } from "../../utils/errors/ApiError";
+import { asyncHandler } from '../../utils/errors/Asynchandler.errors';
+import { Roles } from '../../constants';
+import { emailVerificationMailgenContents, sendMail } from '../../utils/mails/sendMail.utils';
+import { AuthRequest } from '../../../Api2/libs/service/interfaces/Request_Response.interface';
+import path from 'path';
+export const generateAccessAndRefreshToken = async (userId: any) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new ApiError(404, "User not found", []);
+        }
+        const accessToken = await user.generateAccessToken();
+        const refreshToken = await user.generateRefreshToken();
+        user.refreshToken = refreshToken;
+        user.save({ validateBeforeSave: false });
+        return { accessToken, refreshToken };
+
+    } catch (error: any) {
+        throw new ApiError(
+            500,
+            "Something went wrong while generating the access token", []
+        );
+
+    }
+
+}
+const register = asyncHandler(async (req: Request, res: Response) => {
+    const { userName, email, password, roles } = req.body;
+    if (!userName || !email || !password) {
+        throw new ApiError(400, "Please provide all the required fields");
+    }
+    // check if the user already exists
+    const isExistingUser = await User.findOne({ $or: [{ userName }, { email }] });
+    if (isExistingUser) {
+        throw new ApiError(400, "User already exists", []);
+    }
+    // // hash the password
+    // const hashedPassword = await bcryptjs.hash(password, 10);
+
+    const user = await User.create({
+        userName,
+        email,
+        password,
+        roles: roles || Roles[0],
+    });
+    /**
+  * unHashedToken: unHashed token is something we will send to the user's mail
+  */
+
+    const unHashedToken = await user.generateTemporaryToken();
+    await sendMail({
+        email: user?.email,
+        subject: "Please verify your email",
+        mailgenContent: emailVerificationMailgenContents(
+            user.userName,
+            `${req.protocol}://${req.get(
+                "host"
+            )}/api/v1/auth/verify-email/${unHashedToken}`
+        ),
+    });
+    return res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        data: user,
+    });
+});
+const login = asyncHandler(async (req: Request, res: Response) => {
+    const { email, userName, password } = req.body;
+    if (!email && !userName) {
+        throw new ApiError(400, "Please fill all the credentials", [])
+    }
+    if (!password) {
+        throw new ApiError(400, "Please provide password.")
+    }
+    // check for the existing user
+    const isExistingUser = await User.findOne({ $or: [{ email }, { userName }] });
+    if (!isExistingUser) {
+        throw new ApiError(400, "User doesn't exists.")
+    }
+    // check password is correct or not
+    const isPasswordCorrect = await isExistingUser.validatePassword(password);
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "Invalid credentials.")
+    }
+    // generate access and refresh token
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(isExistingUser._id);
+    // create an option object for cookie
+    const options = {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "PROD" ? true : false,
+    };
+    const user = await User.findById(isExistingUser._id).select('-password -emailVerificationToken -emailVerificationTokenExpiresAt -forgotPasswordToken -forgotPasswordTokenExpiresAt -refreshToken');
+    // send the response
+    return res.status(200).
+        cookie("refreshToken", refreshToken, options).
+        cookie("accessToken", accessToken, options).
+        json({
+            message: "Successfully Login.",
+            success: true,
+            data: { user, accessToken, refreshToken }
+        })
+});
+const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const users = await User.findByIdAndUpdate(req.user?.id, { refreshToken: "" }, { new: true });
+    const options = {
+        httponly: true,
+        secure: process.env.NODE_ENV === "PROD",
+    };
+    return res.status(200).
+        clearCookie("refreshToken", options).
+        clearCookie("accessToken", options).
+        json({
+            success: true,
+            message: "Successfully logged out.",
+        });
+})
+const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+    const token = req.params.token;
+    if (!token) {
+        throw new ApiError(400, "Invalid token", []);
+    }
+    const hashedToken = await Jwt.verify(token, process.env.JWT_EMAIL_TOKEN_SECRET!) as JwtPayload;
+
+    // change the isEmailVerified to true after successful verification of email
+
+    await User.findByIdAndUpdate(hashedToken.id, { isEmailVerified: true });
+
+    res.sendFile(path.resolve(__dirname, '..', 'public', 'email.html'), (err) => {
+        if (err) {
+            throw new ApiError(400, "Something went wrong while sending the email", []);
+        }
+    })
+})
+// if user is loggedin and email is yet not verified than we will send the resend email token 
+const resendEmailVerification = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const currentUser = await User.findById(req?.user?.id);
+    if (!currentUser) {
+        throw new ApiError(400, "User not exists.", []);
+    }
+    if (currentUser?.isEmailVerified) {
+        throw new ApiError(400, "Email is already verified", []);
+    }
+    const unHashedToken = await currentUser.generateTemporaryToken();
+    await sendMail({
+        email: currentUser?.email,
+        subject: "Please verify your email",
+        mailgenContent: emailVerificationMailgenContents(
+            currentUser.userName,
+            `${req.protocol}://${req.get(
+                "host"
+            )}/api/v1/auth/verify-email/${unHashedToken}`
+        ),
+    });
+    res.status(200).json({
+        success: true,
+        message: "Email verification link has been sent to your email.",
+    });
+
+})
+// refresh token
+export { register, login, logout, verifyEmail, resendEmailVerification };   
