@@ -10,7 +10,7 @@ import { AuthRequest } from '../../../Api2/libs/service/interfaces/Request_Respo
 import path from 'path';
 export const generateAccessAndRefreshToken = async (userId: any) => {
     try {
-        const user = await User.findById(userId);
+        const user: any = await User.findById(userId);
         if (!user) {
             throw new ApiError(404, "User not found", []);
         }
