@@ -19,6 +19,7 @@ const cors = require("cors");
 // routes imports
 import router from "./rotutes/auth/user.routes";
 import { verifyToken } from "./middleware/verifyToken.middleware";
+import { swaggerDocs } from "./utils/swagger/swagger";
 // custom middlewares used to log the request 
 // app.use(logger);
 const whitelist = [
@@ -59,6 +60,7 @@ const start = async () => {
         app.listen(PORT || 8001, () => {
             console.log(`app is listening on Port ${PORT}`);
         });
+        swaggerDocs(app, Number(PORT))
     } catch (error) {
         console.log("Issue while starting app");
     }

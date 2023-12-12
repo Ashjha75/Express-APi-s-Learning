@@ -15,7 +15,6 @@ class ApiError extends Error {
             this.stack = stack,
             this.success = false,
             this.data = null
-        console.log("in api error")
         if (stack) {
             this.stack = stack;
         }

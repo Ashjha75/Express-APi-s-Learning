@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 const validator = require("validator");
 import { Roles } from "../../constants";
 import Jwt from "jsonwebtoken"
-import bcryptjs from "bcryptjs"
+import { AvatarUser } from "../../utils/allIntrefaces";
 require("dotenv").config();
-console.log("Roles", Roles)
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema({
 
@@ -32,10 +32,13 @@ const userSchema = new mongoose.Schema({
             url: String,
             localPath: String,
         },
-        default: {
-            url: `https://api.dicebear.com/6.x/pixel-art/svg?seed={userName}&background=%23000000&radius=50&colorful=1`,
-            localPath: "",
-        }
+        default: function (this: AvatarUser) {
+            const userName = this.userName || 'default';
+            return {
+                url: `https://api.dicebear.com/6.x/pixel-art/svg?seed=${userName}&background=%23000000&radius=50&colorful=1`,
+                localPath: "",
+            }
+        },
 
     },
     password: {
@@ -47,8 +50,8 @@ const userSchema = new mongoose.Schema({
     },
     roles: {
         type: String,
-        enum: Roles,
-        default: Roles.USER,
+        enum: Object.values(Roles),
+        default: Roles.User,
         required: [true, "Role is required"],
     },
     onboarded: {
@@ -84,12 +87,12 @@ const userSchema = new mongoose.Schema({
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified('password')) return next();
-    this.password = await bcryptjs.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next();
 });
 
-userSchema.methods.validatePassword = async function (password) {
-    return await bcryptjs.compare(password, this.password!)
+userSchema.methods.validatePassword = async function (password: string) {
+    return await bcrypt.compare(password, this.password!)
 }
 
 userSchema.methods.generateAccessToken = async function () {
@@ -110,6 +113,13 @@ userSchema.methods.generateRefreshToken = async function () {
     return Jwt.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET!, {
         expiresIn: process.env.JWT_REFRESH_EXPIRY
     })
+}
+userSchema.methods.generateTemporaryToken = async function () {
+    // const unHashedToken
+    return Jwt.sign({ id: this._id }, process.env.JWT_EMAIL_TOKEN_SECRET!, {
+        expiresIn: process.env.JWT_EMAIL_EXPIRY
+    })
+
 }
 const User = mongoose.models.user || mongoose.model('User', userSchema)
 export default User;

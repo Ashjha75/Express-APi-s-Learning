@@ -8,21 +8,62 @@ export interface myError extends Error {
     errors?: any[];
 }
 
-const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
-    let error: myError = err;
+// const errorHandler = (err: myError, req: Request, res: Response, next: NextFunction) => {
+
+//     let message = "Something went wrong.";
+//     if (!(err instanceof ApiError)) {
+//         const statusCode = (err?.statusCode || err instanceof mongoose.Error) ? 400 : 500;
+//         message = err.message || "Something went wrong.";
+//         if (process.env.NODE_ENV == "DEV")
+//             err = new ApiError(statusCode, message, err?.errors || [], err.stack)
+//         else {
+//             if (message.includes(": ")) {
+//                 message = message.split(": ")[2];
+//             }
+//             err = new ApiError(statusCode, message, [], err.stack)
+//         }
+
+
+//     }
+//     const response = {
+//         ...err,
+//         message: (err.message),
+//         ...(process.env.NODE_ENV === "DEV" ? { stack: err.stack } : {}),
+
+//     }
+//     return res.status(err.statusCode!).json(response);
+// }
+const errorHandler = (err: myError, req: Request, res: Response, next: NextFunction) => {
+    console.log('Error received:', err); // Log the error received
+
     let message = "Something went wrong.";
-    if (!(error instanceof ApiError)) {
-        const statusCode = error?.statusCode || error instanceof mongoose.Error ? 400 : 500;
-        message = error.message || "Something went wrong.";
-        error = new ApiError(statusCode, message, error?.errors || [], error.stack)
+    let statusCode = 500; // Default to 500
+
+    if (!(err instanceof ApiError)) {
+        if (err?.statusCode) {
+            statusCode = err.statusCode;
+        } else if (err instanceof mongoose.Error) {
+            statusCode = 400;
+        }
+
+        message = err.message || "Something went wrong.";
+
+        if (process.env.NODE_ENV == "DEV") {
+            err = new ApiError(statusCode, message, err?.errors || [], err.stack);
+        } else {
+            if (message.includes(": ")) {
+                message = message.split(": ")[2];
+            }
+            err = new ApiError(statusCode, message, [], err.stack);
+        }
     }
+
     const response = {
-        ...error,
-        message: (error.message),
-        ...(process.env.NODE_ENV === "DEV" ? { stack: error.stack } : {}),
-
+        ...err,
+        message: (err.message),
+        ...(process.env.NODE_ENV === "DEV" ? { stack: err.stack } : {}),
     }
-    return res.status(error.statusCode!).json(response);
-}
 
+    return res.status(err.statusCode!).json(response);
+}
 export { errorHandler };
