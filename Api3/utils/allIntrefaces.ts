@@ -1,3 +1,5 @@
+import { JwtPayload } from "jsonwebtoken";
+import { Request } from "express";
 interface mailOptions {
     email: string,
     subject: string,
@@ -6,5 +8,7 @@ interface mailOptions {
 interface AvatarUser {
     userName: string;
 }
-
-export { mailOptions, AvatarUser }
+interface AuthRequest extends Request {
+    user?: JwtPayload;
+}
+export { mailOptions, AvatarUser, AuthRequest }

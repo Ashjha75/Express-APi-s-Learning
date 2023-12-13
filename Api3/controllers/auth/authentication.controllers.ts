@@ -6,7 +6,7 @@ import { ApiError } from "../../utils/errors/ApiError";
 import { asyncHandler } from '../../utils/errors/Asynchandler.errors';
 import { Roles } from '../../constants';
 import { emailVerificationMailgenContents, forgotPasswordMailgenContents, sendMail } from '../../utils/mails/sendMail.utils';
-import { AuthRequest } from '../../../Api2/libs/service/interfaces/Request_Response.interface';
+import { AuthRequest } from '../../utils/allIntrefaces';
 import path from 'path';
 export const generateAccessAndRefreshToken = async (userId: any) => {
     try {
