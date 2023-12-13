@@ -2,7 +2,7 @@ import { Express, Request, Response } from "express";
 import path from "path";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-// import { version } from "../../package.json";
+
 
 
 
@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
             { bearerAuth: [], }
         ]
     },
-    apis: [path.resolve(__dirname, '../../swagger.yaml')],
+    apis: [path.resolve(__dirname, '../../../swagger.yaml')],
 };
 
 const swaggerSPec = swaggerJsdoc(options);
