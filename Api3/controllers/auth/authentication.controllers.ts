@@ -8,6 +8,7 @@ import { Roles } from '../../constants';
 import { emailVerificationMailgenContents, forgotPasswordMailgenContents, sendMail } from '../../utils/mails/sendMail.utils';
 import { AuthRequest } from '../../utils/allIntrefaces';
 import path from 'path';
+import { uploadOnCloudinary } from '../../utils/cloudinary/cloudinary.services';
 export const generateAccessAndRefreshToken = async (userId: any) => {
     try {
         const user: any = await User.findById(userId);
@@ -31,26 +32,33 @@ export const generateAccessAndRefreshToken = async (userId: any) => {
 }
 const register = asyncHandler(async (req: Request, res: Response) => {
     const { userName, email, password, roles } = req.body;
+
     if (!userName || !email || !password) {
         throw new ApiError(400, "Please provide all the required fields");
+    }
+    // file upload
+    let imageUrl = `https://api.dicebear.com/6.x/pixel-art/svg?seed=${userName}&background=%23000000&radius=50&colorful=1`;
+    if (req?.file?.path) {
+        const result = await uploadOnCloudinary(req?.file?.path) as string;
+        if (result) {
+            imageUrl = result;
+        }
     }
     // check if the user already exists
     const isExistingUser = await User.findOne({ $or: [{ userName }, { email }] });
     if (isExistingUser) {
         throw new ApiError(400, "User already exists", []);
     }
-    // // hash the password
-    // const hashedPassword = await bcryptjs.hash(password, 10);
-
     const user = await User.create({
         userName,
         email,
         password,
         roles: roles || Roles.User,
+        avatar: {
+            url: imageUrl,
+            localPath: req?.file?.path
+        }
     });
-    /**
-  * unHashedToken: unHashed token is something we will send to the user's mail
-  */
 
     const unHashedToken = await user.generateTemporaryToken();
     await sendMail({
@@ -66,7 +74,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     return res.status(201).json({
         success: true,
         message: "User created successfully",
-        data: user,
+        data: user
     });
 });
 const login = asyncHandler(async (req: Request, res: Response) => {
