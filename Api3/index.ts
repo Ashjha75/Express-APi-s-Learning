@@ -13,7 +13,7 @@ const { PORT } = process.env;
 // middleware imports
 const cookiParser = require("cookie-parser");
 import bodyParser from "body-parser";
-// import { logger } from "./middlewares/logEvents.middleware";
+import { logger } from "./middleware/requestlogger.middleware";
 const cors = require("cors");
 
 // routes imports
@@ -21,7 +21,7 @@ import router from "./rotutes/auth/user.routes";
 import { verifyToken } from "./middleware/verifyToken.middleware";
 import { swaggerDocs } from "./utils/swagger/swagger";
 // custom middlewares used to log the request 
-// app.use(logger);
+app.use(logger);
 const whitelist = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
