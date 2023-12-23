@@ -20,6 +20,7 @@ const cors = require("cors");
 import router from "./rotutes/auth/user.routes";
 import { verifyToken } from "./middleware/verifyToken.middleware";
 import { swaggerDocs } from "./utils/swagger/swagger";
+import { todoRouter } from "./rotutes/todos/todos.routes";
 // custom middlewares used to log the request 
 app.use(logger);
 const whitelist = [
@@ -53,7 +54,8 @@ app.use(bodyParser.json());
 app.use(cookiParser());
 // versioning of api auth series
 app.use("/api/v1/auth", router);
-
+// versioning of api todo series
+app.use("/api/v1/todo", verifyToken, todoRouter);
 const start = async () => {
     try {
         await dbConnect();
