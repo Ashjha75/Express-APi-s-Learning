@@ -30,7 +30,7 @@ export const generateAccessAndRefreshToken = async (userId: any) => {
     }
 
 }
-const register = asyncHandler(async (req: Request, res: Response) => {
+const register = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { userName, email, password, roles } = req.body;
 
     if (!userName || !email || !password) {
