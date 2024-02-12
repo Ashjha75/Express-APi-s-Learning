@@ -10,5 +10,6 @@ interface AvatarUser {
 }
 interface AuthRequest extends Request {
     user?: JwtPayload;
+    file?: any;
 }
 export { mailOptions, AvatarUser, AuthRequest }
