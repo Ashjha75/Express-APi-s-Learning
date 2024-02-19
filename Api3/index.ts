@@ -21,6 +21,7 @@ import router from "./rotutes/auth/user.routes";
 import { verifyToken } from "./middleware/verifyToken.middleware";
 import { swaggerDocs } from "./utils/swagger/swagger";
 import { todoRouter } from "./rotutes/todos/todos.routes";
+import { socialRouter } from "./rotutes/social/social.routes";
 // custom middlewares used to log the request 
 app.use(logger);
 const whitelist = [
@@ -56,6 +57,8 @@ app.use(cookiParser());
 app.use("/api/v1/auth", router);
 // versioning of api todo series
 app.use("/api/v1/todo", verifyToken, todoRouter);
+// versioning of api social series
+app.use("/api/v1/social", verifyToken, socialRouter);
 const start = async () => {
     try {
         await dbConnect();
