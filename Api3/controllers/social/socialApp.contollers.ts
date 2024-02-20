@@ -97,12 +97,6 @@ const likeUnlikePost = asyncHandler(async (req: AuthRequest, res: Response) =>{
 // get all the posts
 const getAllPosts = asyncHandler(async (req: AuthRequest, res: Response) =>{
     const post=false
-    // const posts = await Post.find().populate('postOwner');
-    if(!post){
-        {
-            $match: { parentPost: { $exists: false } }
-        }
-    },
     const pipeline=[
         
         {
@@ -122,11 +116,20 @@ const getAllPosts = asyncHandler(async (req: AuthRequest, res: Response) =>{
             }
         },
         {
+            $lookup: {
+                from: 'posts',
+                localField: '_id',
+                foreignField: 'parentPost',
+                as: 'comments'
+            }
+        },
+        {
             $project: {
                 _id: 1,
                 postContent: 1,
                 postOwner: 1,
-                likesCount: { $size: '$likes' }
+                likesCount: { $size: '$likes' },
+                commentsCount: { $size: '$comments' },
             }
         },
     ]
@@ -134,4 +137,99 @@ const getAllPosts = asyncHandler(async (req: AuthRequest, res: Response) =>{
     return res.status(200).json(new ApiResponse(200, {posts}, "Posts fetched"));
 });
 
-export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts}
+// get a post by ID
+const getPostById = asyncHandler(async (req:AuthRequest,res:Response)=>{
+    const {postID}=req.params;
+    if(!postID){
+        throw new ApiError(404,"Post ID is required to get Post",[])
+    }
+    let pipeline=[
+        {
+            $match: { _id: new mongoose.Types.ObjectId(postID) }
+        },
+        {
+            $lookup: {
+                from: 'socialuserfeatures',
+                localField: 'postOwner',
+                foreignField: '_id',
+                as: 'postOwner'
+            }
+        },
+        {
+            $lookup: {
+                from: 'likes',
+                localField: '_id',
+                foreignField: 'post',
+                as: 'likes'
+            }
+        },
+        {
+            $lookup: {
+                from: 'posts',
+                localField: '_id',
+                foreignField: 'parentPost',
+                as: 'comments'
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                postContent: 1,
+                postOwner: 1,
+                comments:1,
+                likesCount: { $size: '$likes' },
+                commentsCount: { $size: '$comments' },
+            }
+        },
+    ]
+    const post = await Post.aggregate(pipeline);
+    if(!post){
+        throw new ApiError(404,"Post not found",[])
+    }
+    return res.status(200).json(new ApiResponse(200, {post}, "Post fetched"));
+})
+// get the User Profile
+const getUserProfile =asyncHandler(async (req:AuthRequest,res:Response)=>{
+    const {userID}=req.params;
+    if(!userID){
+        throw new ApiError(404,"User ID is required to get User Profile",[])
+    }
+    let pipeline=[
+        {$match: {_id: new mongoose.Types.ObjectId(userID)}},
+       { $lookup: {
+            from: 'users',
+            localField: 'currentUser',
+            foreignField: '_id',
+            as: 'currentUser'
+        }},
+        {$unwind: '$currentUser'},
+        
+        {
+            $project: {
+                _id: 1,
+                location: 1,
+                bio: 1,
+                website: 1,
+                coverPhoto: 1,
+                accountType: 1,
+                pinnedPosts: 1,
+                premiumUser: 1,
+                'currentUser._id': 1,
+                'currentUser.userName': 1,
+                'currentUser.email': 1,
+                'currentUser.avatar': 1,
+                'currentUser.roles': 1,
+                'currentUser.onboarded': 1,
+                'currentUser.isEmailVerified': 1
+            }
+        }
+    ]
+    const userProfile = await SocialUserFeatures.aggregate(pipeline);
+    if(!userProfile){
+        throw new ApiError(404,"User Profile not found",[])
+    }
+    return res.status(200).json(new ApiResponse(200, {userProfile}, "User Profile fetched"));
+});
+
+
+export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile}
