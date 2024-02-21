@@ -8,6 +8,7 @@ import Post from "../../models/social/posts.models";
 import { uploadOnCloudinary } from "../../utils/cloudinary/cloudinary.services";
 import Like from "../../models/social/like.models";
 import mongoose from "mongoose";
+import UserRelations from "../../models/social/userRelations.models";
 
 
 // Create the spocial user profile
@@ -231,6 +232,89 @@ const getUserProfile =asyncHandler(async (req:AuthRequest,res:Response)=>{
     return res.status(200).json(new ApiResponse(200, {userProfile}, "User Profile fetched"));
 });
 // folow and unfollow the user
+const followAndUnfollowUser = asyncHandler(async (req:AuthRequest,res:Response)=>{
+    const {userID,notifyMe}=req.body;
+    const currentUserId=req?.user?.id;
+    if(!userID){
+        throw new ApiError(404,"User ID is required to follow or unfollow",[])
+    }
+    // check that is userID is valid or not
+    const user = await SocialUserFeatures.findById(userID);
+    if(!user){
+        throw new ApiError(404,"Please provide valid user",[])
+    }
+    // fetch the current user _id
+    const currentUser = await SocialUserFeatures.findOne({currentUser:currentUserId});
+    if(!currentUser){
+        throw new ApiError(404,"User not found",[])
+    }
+    // check if the user is already following
+    const isAlreadyFollowing = await UserRelations.findOne({follower:currentUser._id,following:userID});
+    if(!isAlreadyFollowing){
+        const followUser = new UserRelations({
+            follower:currentUser._id,
+            following:userID,
+            notificationbell:notifyMe
+        });
+        await followUser.save();
+        return res.status(200).json(new ApiResponse(200, {followUser}, "User followed"));
+    }
+    else{
+        const unfollowUser = await UserRelations.findOneAndDelete({follower:currentUser._id,following:userID});
+        if(!unfollowUser){
+            throw new ApiError(404,"User not found to unfollow",[])
+        }
+        return res.status(200).json(new ApiResponse(200, {unfollowUser}, "User unfollowed"));
+}});
+// get All followed users
+const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
+    const {userID,verifiedUser}=req.params;
+    if(!userID){
+        throw new ApiError(404,"User ID is required to get followed and following users",[])
+    }
+    // check that is userID is valid or not
+    const user = await SocialUserFeatures.findById(userID);
+    if(!user){
+        throw new ApiError(404,"Please provide valid user",[])
+    }
+    const pipeline=[
+        {$match:{ follower: new mongoose.Types.ObjectId(userID.trim()) }},
+        {$lookup: {
+            from:'socialuserfeatures',
+            foreignField:'_id',
+            localField:'following',
+            as:'followingProfile'
+        }},
+        {$lookup: {
+            from:'users',
+            foreignField:'_id',
+            localField:'followingProfile.currentUser',
+            as:'followingOriginalProfile'
+        }},
+        {$unwind: '$followingProfile'},
+        {
+            $project: {
+                _id: 1,
+                follower: 1,
+                following: 1,
+                notificationbell: 1,
+                'followingProfile._id': 1,
+                'followingProfile.bio':1,
+                'followingOriginalProfile.UserName':1,
+                'followingOriginalProfile.email':1,
+                'followingOriginalProfile.avatar':1,
+                'followingOriginalProfile.roles':1,
+            }
+        }
+
+    ];
+    const followedUsers = await UserRelations.aggregate(pipeline);
+    if(!followedUsers){
+        throw new ApiError(404,"No followed users found",[])
+    }
+    return res.status(200).json(new ApiResponse(200, {followedUsers}, "Followed Users fetched"));
+
+})
 
 
-export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile}
+export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers}
