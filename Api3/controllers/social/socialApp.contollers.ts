@@ -315,6 +315,25 @@ const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
     return res.status(200).json(new ApiResponse(200, {followedUsers}, "Followed Users fetched"));
 
 })
+// get all folling users
 
+// get all th liked posts
 
+// get all the commented posts
+
+// block and unblock the user
+
+// report the user
+
+// report the post
+
+// edit the user profile
+
+// all the post which contains the media
+
+// get all notifications
+
+// get list and count of followers ypu knw 
+
+// who to fllow or my network
 export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers}
