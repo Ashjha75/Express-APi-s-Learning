@@ -278,35 +278,64 @@ const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
         throw new ApiError(404,"Please provide valid user",[])
     }
     const pipeline=[
+        // get all the users who are following the current user
         {$match:{ follower: new mongoose.Types.ObjectId(userID.trim()) }},
+        // get the socialProfile of the following users
         {$lookup: {
             from:'socialuserfeatures',
             foreignField:'_id',
             localField:'following',
             as:'followingProfile'
         }},
+        // get the original user profile of the following users
         {$lookup: {
             from:'users',
             foreignField:'_id',
             localField:'followingProfile.currentUser',
             as:'followingOriginalProfile'
         }},
+        // unwind the array so that we can get the single object of the following user
         {$unwind: '$followingProfile'},
+        // unwind the array so that we can get the single object of the following user
+        {$unwind: '$followingOriginalProfile'},
+
+        // add the fields to the following user which we got from the above pipeline and it is custom fields according to the requirement
+        {
+            $addFields: {
+                "followerInfo": {
+                    _id: "$_id",
+                    follower: "$follower",
+                    following: "$following",
+                    notificationbell: "$notificationbell",
+                    followingProfileId: "$followingProfile._id",
+                    followingProfileBio: "$followingProfile.bio",
+                    followingOriginalProfileUserName: "$followingOriginalProfile.UserName",
+                    followingOriginalProfileEmail: "$followingOriginalProfile.email",
+                    followingOriginalProfileAvatar: "$followingOriginalProfile.avatar",
+                    followingOriginalProfileRoles: "$followingOriginalProfile.roles",
+                },
+                "userCount":1
+            }
+        },
+        // group the following users in a single array
+        // {
+        //     $group: {
+        //         _id: null,
+        //         followedUsers: {
+        //             $push: "$followerInfo"
+        //         },
+        //         totalFollowedUsers: { $sum: "userCount" }
+        //     }
+        // },
         {
             $project: {
-                _id: 1,
-                follower: 1,
-                following: 1,
-                notificationbell: 1,
-                'followingProfile._id': 1,
-                'followingProfile.bio':1,
-                'followingOriginalProfile.UserName':1,
-                'followingOriginalProfile.email':1,
-                'followingOriginalProfile.avatar':1,
-                'followingOriginalProfile.roles':1,
+                _id: 0,
+                followerInfo: 1,
             }
+        },
+        {
+            $count: "toatlFollowedUsers"
         }
-
     ];
     const followedUsers = await UserRelations.aggregate(pipeline);
     if(!followedUsers){
@@ -333,7 +362,16 @@ const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
 
 // get all notifications
 
-// get list and count of followers ypu knw 
+// get list and count of followers you know
 
 // who to fllow or my network
-export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers}
+
+
+// procedure queue code
+import Procedure from "../../utils/Queues/rabbitMqSetup.utils";
+const procedure = new Procedure();
+const queueTest= asyncHandler(async (req:Request,res:Response)=>{
+    await procedure.publishMessage(req.body.logType,req.body.message);
+    return res.status(200).json(new ApiResponse(200, {}, "Message sent to the queue"));
+});
+export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers,queueTest}
