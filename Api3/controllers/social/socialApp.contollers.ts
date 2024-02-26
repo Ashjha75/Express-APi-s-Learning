@@ -278,66 +278,56 @@ const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
         throw new ApiError(404,"Please provide valid user",[])
     }
     const pipeline=[
-        // get all the users who are following the current user
-        {$match:{ follower: new mongoose.Types.ObjectId(userID.trim()) }},
-        // get the socialProfile of the following users
-        {$lookup: {
-            from:'socialuserfeatures',
-            foreignField:'_id',
-            localField:'following',
-            as:'followingProfile'
-        }},
-        // get the original user profile of the following users
-        {$lookup: {
-            from:'users',
-            foreignField:'_id',
-            localField:'followingProfile.currentUser',
-            as:'followingOriginalProfile'
-        }},
-        // unwind the array so that we can get the single object of the following user
-        {$unwind: '$followingProfile'},
-        // unwind the array so that we can get the single object of the following user
-        {$unwind: '$followingOriginalProfile'},
-
-        // add the fields to the following user which we got from the above pipeline and it is custom fields according to the requirement
+        // match the user id for finding the followers
         {
-            $addFields: {
-                "followerInfo": {
-                    _id: "$_id",
-                    follower: "$follower",
-                    following: "$following",
-                    notificationbell: "$notificationbell",
-                    followingProfileId: "$followingProfile._id",
-                    followingProfileBio: "$followingProfile.bio",
-                    followingOriginalProfileUserName: "$followingOriginalProfile.UserName",
-                    followingOriginalProfileEmail: "$followingOriginalProfile.email",
-                    followingOriginalProfileAvatar: "$followingOriginalProfile.avatar",
-                    followingOriginalProfileRoles: "$followingOriginalProfile.roles",
-                },
-                "userCount":1
+            $match:{follower:new mongoose.Types.ObjectId(userID.trim())}
+        },
+        {
+            $lookup: {
+                from: 'socialuserfeatures',
+                localField: 'following',
+                foreignField: '_id',
+                as: 'followers'
             }
         },
-        // group the following users in a single array
-        // {
-        //     $group: {
-        //         _id: null,
-        //         followedUsers: {
-        //             $push: "$followerInfo"
-        //         },
-        //         totalFollowedUsers: { $sum: "userCount" }
-        //     }
-        // },
+        {
+            $lookup: {
+                from: "users", // Replace "users" with the actual collection name
+                localField: "followers.currentUser",
+                foreignField: "_id",
+                as: "currentUserDetails"
+            }
+        },
+        {
+            $unwind: "$followers" // Unwind the "followers" array
+          },
+              {
+                $unwind: "$currentUserDetails" // Unwind the "userDetails" array
+              },
+              
+        // project the required fields
         {
             $project: {
-                _id: 0,
-                followerInfo: 1,
+                _id: "$followers._id",
+                userName:"$currentUserDetails.userName",
+                email:"$currentUserDetails.email",
+                avatar:"$currentUserDetails.avatar",
+                bio:"$followers.bio",
+                premiumUser:"$followers.premiumUser"
             }
-        },
-        {
-            $count: "toatlFollowedUsers"
         }
+       
     ];
-    const followedUsers = await UserRelations.aggregate(pipeline);
+    // const followedUsers = await UserRelations.aggregate(pipeline);
+    const followedUsers = await UserRelations.find({ following: userID})
+      .populate({
+        path: 'following',
+        select: ' location bio currentUser', // Select desired fields
+        populate: {
+          path: 'currentUser', // Populate the 'currentUser' field
+          select: 'userName email' // Select desired fields from 'currentUser'
+        }
+      });
     if(!followedUsers){
         throw new ApiError(404,"No followed users found",[])
     }
