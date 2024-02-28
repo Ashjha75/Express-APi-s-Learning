@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 require("dotenv").config();
 export const dbConnect = async () => {
     mongoose.set('strictQuery', true);
-    mongoose.set('debug', true);
+    mongoose.set('debug', false);
     let isConnected = false;
     let dbInstance = undefined;
     if (!process.env.DATABASE_URL) {
