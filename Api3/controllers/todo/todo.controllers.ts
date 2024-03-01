@@ -26,6 +26,8 @@ const getAllTodos = asyncHandler(async (req: Request, res: Response) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const pipeline = [];
+         // Add a $sort stage to sort the todos by createdAt (assuming you have a 'time' field)
+         pipeline.push({ $sort: { updatedAt: -1 } } as any);
     if (queryParams.title) {
         pipeline.push({
             $match: {
@@ -67,37 +69,93 @@ const getAllTodos = asyncHandler(async (req: Request, res: Response) => {
             }
         })
     }
+   
     console.log(pipeline)
     const todos = await Todo.aggregate(pipeline)
+    const count = todos.length ? todos[0].count : 0;
     res.status(200).json({
         success: true,
         message: "Todos fetched successfully",
-        data: todos
+        data: todos,
+        assignedTodosCount: count
     });
 })
 // Create a new todo
+// const createTodo = asyncHandler(async (req: AuthRequest, res: Response) => {
+//     // take data from req.body
+//     // validate title and description
+
+
+//     let { title, description, assignedTo, priority, dueDate } = req.body;
+//     if (!title || !description) {
+//         throw new ApiError(400, "Provide all required fields", []);
+//     }
+//     const currentTodoUser = await TodoProfile.findOne({ currentUser: req.user?.id });
+//     if (!currentTodoUser) {
+//         throw new ApiError(404, "User not found", []);
+//     }
+//     let isValidUser = null;
+//     if (assignedTo) {
+//         isValidUser = await TodoProfile.findOne({ userName: assignedTo });
+//         if (!isValidUser) {
+//             throw new ApiError(404, "User not found", [])
+//         }
+//         assignedTo = isValidUser._id;
+//     }
+
+
+//     const newTodo = new Todo({
+//         title,
+//         description,
+//         priority,
+//         dueDate,
+//         createdBy: currentTodoUser._id,
+//         assignedTo,
+//     });
+
+//     await newTodo.save();
+
+//     if (isValidUser) {
+//         await isValidUser.assigned.push({
+//             task: newTodo._id,
+//             assignedBy: currentTodoUser?._id,
+//             assignedTo
+//         })
+//         await currentTodoUser.assigned.push({
+//             task: newTodo._id,
+//             assignedBy: currentTodoUser?._id,
+//             assignedTo
+//         })
+//         await isValidUser.save();
+//         await currentTodoUser.save();
+
+//     }
+//     res.status(201).json({
+//         success: true,
+//         message: "Todo added successfully",
+//         data: newTodo
+//     });
+
+// });
 const createTodo = asyncHandler(async (req: AuthRequest, res: Response) => {
-    // take data from req.body
-    // validate title and description
-
-
     let { title, description, assignedTo, priority, dueDate } = req.body;
     if (!title || !description) {
         throw new ApiError(400, "Provide all required fields", []);
     }
+
     const currentTodoUser = await TodoProfile.findOne({ currentUser: req.user?.id });
     if (!currentTodoUser) {
         throw new ApiError(404, "User not found", []);
     }
-    let isValidUser = null;
-    if (assignedTo) {
-        isValidUser = await TodoProfile.findOne({ userName: assignedTo });
-        if (!isValidUser) {
-            throw new ApiError(404, "User not found", [])
-        }
-        assignedTo = isValidUser._id;
-    }
 
+    let assignedToId = null;
+    if (assignedTo) {
+        const assignedUser = await TodoProfile.findOne({ userName: assignedTo });
+        if (!assignedUser) {
+            throw new ApiError(404, "User not found", []);
+        }
+        assignedToId = assignedUser._id;
+    }
 
     const newTodo = new Todo({
         title,
@@ -105,32 +163,26 @@ const createTodo = asyncHandler(async (req: AuthRequest, res: Response) => {
         priority,
         dueDate,
         createdBy: currentTodoUser._id,
-        assignedTo,
+        assignedTo: assignedToId,
     });
 
     await newTodo.save();
 
-    if (isValidUser) {
-        await isValidUser.assigned.push({
+    if (assignedToId) {
+        const task = {
             task: newTodo._id,
-            assignedBy: currentTodoUser?._id,
-            assignedTo
-        })
-        await currentTodoUser.assigned.push({
-            task: newTodo._id,
-            assignedBy: currentTodoUser?._id,
-            assignedTo
-        })
-        await isValidUser.save();
-        await currentTodoUser.save();
-
+            assignedBy: currentTodoUser._id,
+            assignedTo: assignedToId
+        };
+        await TodoProfile.updateOne({ _id: assignedToId }, { $push: { assigned: task } });
+        await TodoProfile.updateOne({ _id: currentTodoUser._id }, { $push: { assigned: task } });
     }
+
     res.status(201).json({
         success: true,
         message: "Todo added successfully",
         data: newTodo
     });
-
 });
 // Get Todo by it id
 const getTodoByID = asyncHandler(async (req: Request, res: Response) => {
