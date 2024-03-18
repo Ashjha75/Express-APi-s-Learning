@@ -358,10 +358,10 @@ const getAllFollowedUsers = asyncHandler(async (req:AuthRequest,res:Response)=>{
 
 
 // procedure queue code
-import Procedure from "../../utils/Queues/rabbitMqSetup.utils";
-const procedure = new Procedure();
-const queueTest= asyncHandler(async (req:Request,res:Response)=>{
-    await procedure.publishMessage(req.body.logType,req.body.message);
-    return res.status(200).json(new ApiResponse(200, {}, "Message sent to the queue"));
-});
-export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers,queueTest}
+// import Procedure from "../../utils/Queues/rabbitMqSetup.utils";
+// const procedure = new Procedure();
+// const queueTest= asyncHandler(async (req:Request,res:Response)=>{
+//     await procedure.publishMessage(req.body.logType,req.body.message);
+//     return res.status(200).json(new ApiResponse(200, {}, "Message sent to the queue"));
+// });
+export { createSocialUserProfile,createPost,likeUnlikePost ,getAllPosts,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers}

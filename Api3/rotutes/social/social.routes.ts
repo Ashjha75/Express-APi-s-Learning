@@ -1,6 +1,6 @@
 import {Router } from "express";
 import { upload } from "../../middleware/multer.middleware";
-import { createPost, createSocialUserProfile,getAllPosts, likeUnlikePost ,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers,queueTest} from "../../controllers/social/socialApp.contollers";
+import { createPost, createSocialUserProfile,getAllPosts, likeUnlikePost ,getPostById,getUserProfile,followAndUnfollowUser,getAllFollowedUsers} from "../../controllers/social/socialApp.contollers";
 const { verifyToken } = require("../../middleware/verifyToken.middleware");
 
 
@@ -15,5 +15,5 @@ socialRouter.get("/getUserProfile/:userID",getUserProfile);
 socialRouter.post("/followAndUnfollowUser",followAndUnfollowUser);
 socialRouter.get("/getAllFollowedUsers/:userID",getAllFollowedUsers);
 
-socialRouter.post("/queueTest",queueTest);``
+// socialRouter.post("/queueTest",queueTest);``
 export { socialRouter }
