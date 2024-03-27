@@ -50,7 +50,7 @@ app.use(express.static("public"))
 // data from url{extended help in  reading object inside object}
 app.use(express.urlencoded({ extended: true }));
 // not required now
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 // for cookie reading
 app.use(cookiParser());
 // versioning of api auth series
