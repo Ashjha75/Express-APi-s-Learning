@@ -1,5 +1,6 @@
 import User from '../../models/auth/user.models'
-import { NextFunction, Request, Response } from 'express';
+import fs from 'fs';
+import { Request, Response } from 'express';
 const bcryptjs = require("bcryptjs");
 import Jwt, { JwtPayload } from 'jsonwebtoken';
 import { ApiError } from "../../utils/errors/ApiError";
@@ -42,6 +43,16 @@ const register = asyncHandler(async (req: AuthRequest, res: Response) => {
         const result = await uploadOnCloudinary(req?.file?.path) as string;
         if (result) {
             imageUrl = result;
+        }
+        // delete the file from the local storage
+        if (fs.existsSync(path.join(__dirname, '..', '..', 'public', 'temp', req.file.filename))) {
+            fs.unlink(path.join(__dirname, '..', '..', 'public', 'temp', req.file.filename), err => {
+                if (err) {
+                    console.error("Error deleting file:", err);
+                }
+            });
+        } else {
+            console.log('File does not exist');
         }
     }
     // check if the user already exists

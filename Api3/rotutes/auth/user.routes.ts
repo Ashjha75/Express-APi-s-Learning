@@ -1,6 +1,7 @@
 const express = require("express");
 import { Request, Response } from "express";
 import { verifyToken } from "../../middleware/verifyToken.middleware";
+import { upload } from "../../middleware/multer.middleware";
 // import { authorizeUser } from "../middlewares/authorizeUser.middlleware";
 // import { verifyToken } from "../middlewares/verifyToken";
 // import { addProduct } from "../controllers/productsControllers";
@@ -14,7 +15,7 @@ router.get("/", (req: Request, res: Response) => {
         message: "Deployed Successfully"
     })
 })
-router.post("/signup", register);
+router.post("/signup", upload.single('file'), register);
 router.post("/login", login);
 router.get("/verify-email/:token", verifyEmail);
 router.post("/refresh-token", verifyToken, refreshToken);
