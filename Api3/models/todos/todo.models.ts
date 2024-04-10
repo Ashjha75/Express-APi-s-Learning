@@ -40,7 +40,7 @@ const todoSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// method which will add tags from description and title if there is @ symbol.
+// method which will add tags from description and title if there is @symbol.
 todoSchema.pre("save", async function (next) {
     if (this.isModified("title") || this.isModified("description")) {
         // by splitting the description and title (if there is @ symbol) we will get tags
