@@ -126,7 +126,7 @@ const login = asyncHandler(async (req: Request, res: Response) => {
         })
 });
 const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const users = await User.findByIdAndUpdate(req.user?.id, { refreshToken: "" }, { new: true });
+    await User.findByIdAndUpdate(req.user?.id, { refreshToken: "" }, { new: true });
     const options = {
         httponly: true,
         secure: process.env.NODE_ENV === "PROD",

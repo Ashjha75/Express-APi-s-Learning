@@ -2,7 +2,6 @@
 const express = require("express");
 require("express-async-errors");
 const app = express();
-import { errorHandler } from "./middleware/error.middleware";
 
 // database connect
 import { dbConnect } from "./config/dbConnect";
@@ -12,7 +11,7 @@ const { PORT } = process.env;
 
 // middleware imports
 const cookiParser = require("cookie-parser");
-import bodyParser from "body-parser";
+import { errorHandler } from "./middleware/error.middleware";
 import { logger } from "./middleware/requestlogger.middleware";
 const cors = require("cors");
 
@@ -27,7 +26,6 @@ app.use(logger);
 const whitelist = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "https://www.google.com/",
 ];
 const corsOptions = {
     origin: (origin: any, callback: any) => {
